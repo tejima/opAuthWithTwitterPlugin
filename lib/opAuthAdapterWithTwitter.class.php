@@ -75,40 +75,54 @@ class opAuthAdapterWithTwitter extends opAuthAdapter
   public function authenticate()
   {
     $result = parent::authenticate();
-
-    if ($this->getAuthForm()->getRedirectHtml())
-    {
-      // We got a valid HTML contains JavaScript to redirect to the OpenID provider's site.
-      // This HTML must not include any contents from symfony, so this script will stop here.
-      echo $this->getAuthForm()->getRedirectHtml();
-      exit;
+    //Twitterからのコールバック
+    if(isset($_GET['oauth_token'])&&isset($_GET['oauth_verifier'])){
+      error_log("authenticateDouble::"."\n",3,'/tmp/aaaaa');
+      $instance =  OpenPNEOAuth::getInstance('http://twitter.com/',  Doctrine::getTable('SnsConfig')->get('awt_consumer'),  Doctrine::getTable('SnsConfig')->get('awt_secret'));
+      $token = $instance->getAccessToken($_GET['oauth_token'], $_GET['oauth_verifier']);
+      print_r($token);
+      //phpinfo();    $member = $this->getUser()->getMember();
+      error_log("p:". print_r($token,true)."\n",3,'/tmp/aaaaa');
+      if($token['screen_name']){
+        $line = Doctrine::getTable('MemberConfig')->findOneByNameAndValue("twitter_user_id",$token['user_id']);
+        if($line){
+          $result = $line->member_id;
+        } else {
+          $member = new Member();
+          $member->setName("tmp");
+          $member->setIsActive(true);
+          $member->save();
+          
+          $member->setConfig('pc_address', $token['screen_name'] . "@twitter.com");
+          $member->setConfig('twitter_user_id', $token['user_id']);
+          $member->setConfig('twitter_oauth_token',$token['oauth_token']);
+          $member->setConfig('twitter_screen_name', $token['screen_name']);
+          $member->setConfig('twitter_oauth_token_secret',$token['oauth_token_secret']);
+          $result = $member->getId();
+        }
+        return $result;
+      }else{
+        header("Location: http://yahoo.com");
+        exit;
+      }
     }
-    elseif ($this->getAuthForm()->getRedirectUrl())
-    {
-      header('Location: '.$this->getAuthForm()->getRedirectUrl());
-      exit;
-    }
 
-    if ($this->getAuthForm()->isValid()
-        && $this->getAuthForm()->getValue('openid')
-        && !$this->getAuthForm()->getMember())
-    {
-      //$member = Doctrine::getTable('Member')->createPre();
-      $member = new Member();
-      $member->setName('MUDAMUDA');
-      $member->setIsActive(true);
-      $member->save();
+    //コールバックでは無く、最初にログインボタン押されたらこちら
+    $client = OpenPNEOAuth::getInstance('http://twitter.com/',Doctrine::getTable('SnsConfig')->get('awt_consumer'), Doctrine::getTable('SnsConfig')->get('awt_secret'));
+    $token = $client->getRequestToken( $this->getCurrentUrl());
 
-      $member->setConfig('openid', $this->getAuthForm()->getValue('openid'));
-      $this->appendMemberInformationFromProvider($member);
-      $member->setName('ORAORA');
+    error_log("getCurrentUrl()".$this->getCurrentUrl()."\n",3,'/tmp/aaaaa');
 
-      $member->save();
-
-      $result = $member->getId();
-    }
-
-    return $result;
+    //awt_host は Twitter認証ごもどってきてもらいたいURL。
+    //$token = $client->getRequestToken("http://www.tejimaya.com");
+    error_log("p:". print_r($token,true)."\n",3,'/tmp/aaaaa');
+    error_log("getAuthorizeUrl():".OpenPNEOAuth::getInstance()->getAuthorizeUrl($token)."\n",3,'/tmp/aaaaa');
+    error_log("awt_consumer:".Doctrine::getTable('SnsConfig')->get('awt_consumer')."\n",3,'/tmp/aaaaa');
+    error_log("awt_secret:".Doctrine::getTable('SnsConfig')->get('awt_secret')."\n",3,'/tmp/aaaaa');
+    error_log("awt_host:".Doctrine::getTable('SnsConfig')->get('awt_host')."\n",3,'/tmp/aaaaa');
+    //header('Location: '.OpenPNEOAuth::getInstance()->getAuthorizeUrl($token)); // 認可用 URL を取得し、リダイレクト
+    header('Location: ' . 'http://twitter.com/oauth/authenticate?oauth_token='.$token['oauth_token']);
+    exit;
   }
 
   public function getCurrentUrl()

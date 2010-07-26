@@ -25,10 +25,11 @@ class opAuthWithTwitterPluginActions extends sfActions
   */
   public function executeIndex(sfWebRequest $request)
   {
-    $this->form = new AuthWithTwitterPluginConfigForm();
+    $adapter = new opAuthAdapterWithTwitter('WithTwitter');
+    $this->form = $adapter->getAuthConfigForm();
     if ($request->isMethod(sfWebRequest::POST))
     {
-      $this->form->bind($request->getParameter('awt'));
+      $this->form->bind($request->getParameter('auth'.$adapter->getAuthModeName()));
       if ($this->form->isValid())
       {
         $this->form->save();
@@ -36,5 +37,4 @@ class opAuthWithTwitterPluginActions extends sfActions
       }
     }
   }
-
 }

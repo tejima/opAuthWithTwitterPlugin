@@ -2,8 +2,32 @@ enable_mobile:
   Default: 0
 
 enable_pc:
-  Default: 0
+  Default: 1
 
 admin_invite:
   Default:  false
+awt_consumer:
+  Name:     "awt_consumer"
+  Caption:  "awt_consumer"
+  FormType: "input"
+  ValueType: "text"
+  IsConfig:   true
+  IsRequired: true
+  Default:    ""
+awt_secret:
+  Name:     "awt_secret"
+  Caption:  "awt_secret"
+  FormType: "input"
+  ValueType: "text"
+  IsConfig:   true
+  IsRequired: true
+  Default:    ""
+awt_host:
+  Name:     "awt_host"
+  Caption:  "awt_host"
+  FormType: "input"
+  ValueType: "text"
+  IsConfig:   true
+  IsRequired: true
+  Default:    ""
 
